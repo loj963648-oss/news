@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArticlePreview, ArticleContent, VocabItem } from '../types';
 import { generateFullArticle, explainWordInContext, fetchWordAudio } from '../services/geminiService';
-import { ArrowLeft, Languages, Loader2, Volume2, Info, ChevronUp, Book, Clock, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Languages, Loader2, Volume2, Info, ChevronUp, Book, Clock, GraduationCap, Heart } from 'lucide-react';
 
 interface ArticleReaderProps {
   preview: ArticlePreview;
@@ -51,6 +51,7 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ preview, onBack }) => {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [sessionVocab, setSessionVocab] = useState<VocabItem[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
 
   useEffect(() => {
     const loadContent = async () => {
@@ -59,9 +60,26 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ preview, onBack }) => {
       setContent(data);
       setLoading(false);
     };
+
+    // Initialize favorite state from localStorage
+    const favorites = JSON.parse(localStorage.getItem('user_favorites') || '[]');
+    setIsFavorited(favorites.includes(preview.id));
+
     loadContent();
     window.scrollTo(0, 0);
   }, [preview]);
+
+  const toggleFavorite = () => {
+    const favorites = JSON.parse(localStorage.getItem('user_favorites') || '[]');
+    let newFavorites;
+    if (isFavorited) {
+      newFavorites = favorites.filter((id: string) => id !== preview.id);
+    } else {
+      newFavorites = [...favorites, preview.id];
+    }
+    localStorage.setItem('user_favorites', JSON.stringify(newFavorites));
+    setIsFavorited(!isFavorited);
+  };
 
   /**
    * 播放单词发音
@@ -227,13 +245,22 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ preview, onBack }) => {
                     <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
                     返回列表
                 </button>
-                <button 
-                    onClick={() => setShowAllTranslations(!showAllTranslations)}
-                    className={`flex items-center gap-2 px-6 py-2 rounded-full text-xs font-bold transition-all ${showAllTranslations ? 'bg-brand-primary text-white shadow-lg' : 'bg-brand-border/40 text-brand-muted hover:bg-brand-border/60'}`}
-                >
-                    <Languages size={14} />
-                    {showAllTranslations ? '关闭对照' : '开启双语对照'}
-                </button>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={toggleFavorite}
+                        className={`p-2.5 rounded-full transition-all ${isFavorited ? 'bg-red-50 text-red-500 scale-110' : 'bg-brand-border/40 text-brand-muted hover:text-brand-primary hover:scale-105'}`}
+                        aria-label={isFavorited ? "取消收藏" : "加入收藏"}
+                    >
+                        <Heart size={20} fill={isFavorited ? "currentColor" : "none"} />
+                    </button>
+                    <button 
+                        onClick={() => setShowAllTranslations(!showAllTranslations)}
+                        className={`flex items-center gap-2 px-6 py-2 rounded-full text-xs font-bold transition-all ${showAllTranslations ? 'bg-brand-primary text-white shadow-lg' : 'bg-brand-border/40 text-brand-muted hover:bg-brand-border/60'}`}
+                    >
+                        <Languages size={14} />
+                        {showAllTranslations ? '关闭对照' : '开启双语对照'}
+                    </button>
+                </div>
             </div>
 
             <header className="mb-16">
