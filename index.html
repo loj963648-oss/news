@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Daily Insight</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['DM Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+              serif: ['Lora', 'Georgia', 'serif'],
+            },
+            colors: {
+              brand: {
+                bg: 'var(--bg-primary)', 
+                surface: 'var(--bg-surface)',
+                text: 'var(--text-primary)',
+                muted: 'var(--text-muted)',
+                border: 'var(--border-color)',
+                primary: '#007AFF', // Apple Blue
+                secondary: '#5856D6', // Apple Purple
+              },
+            },
+            borderRadius: {
+              'xl': '1rem',
+              '2xl': '1.5rem',
+              '3xl': '2rem',
+            },
+            animation: {
+              'apple-in': 'appleIn 0.8s cubic-bezier(0.23, 1, 0.32, 1)',
+              'fade-in': 'fadeIn 0.6s ease-out',
+            },
+            keyframes: {
+              appleIn: {
+                '0%': { opacity: '0', transform: 'translateY(20px) scale(0.98)' },
+                '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --bg-primary: #F5F5F7; /* Apple Grey */
+        --bg-surface: rgba(255, 255, 255, 0.8);
+        --text-primary: #1D1D1F;
+        --text-muted: #86868B;
+        --border-color: rgba(0, 0, 0, 0.08);
+      }
+
+      [data-theme='dark'] {
+        --bg-primary: #000000;
+        --bg-surface: rgba(28, 28, 30, 0.8);
+        --text-primary: #F5F5F7;
+        --text-muted: #86868B;
+        --border-color: rgba(255, 255, 255, 0.12);
+      }
+
+      [data-theme='sepia'] {
+        --bg-primary: #F4ECD8;
+        --bg-surface: rgba(233, 223, 197, 0.8);
+        --text-primary: #433422;
+        --text-muted: #7D6B56;
+        --border-color: rgba(67, 52, 34, 0.1);
+      }
+
+      body { 
+        background-color: var(--bg-primary); 
+        color: var(--text-primary); 
+        -webkit-font-smoothing: antialiased;
+        transition: background-color 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+      }
+
+      /* Apple-style thin scrolls */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #d1d1d6; border-radius: 10px; }
+      [data-theme='dark'] ::-webkit-scrollbar-thumb { background: #3a3a3c; }
+
+      .apple-blur { backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); }
+      .apple-card-shadow { box-shadow: 0 4px 24px rgba(0,0,0,0.04); }
+      .apple-card-shadow:hover { box-shadow: 0 12px 48px rgba(0,0,0,0.08); }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "name": "The Daily Insight",
+  "description": "An elegant, English journal reading application featuring Economist-style articles, bilingual translations, and vocabulary annotations powered by Gemini.",
+  "requestFramePermissions": []
+}
