@@ -27,7 +27,9 @@ async function decodeAudioData(
   sampleRate: number,
   numChannels: number,
 ): Promise<AudioBuffer> {
-  const dataInt16 = new Int16Array(data.buffer);
+  // 确保数据长度是 2 的倍数（Int16 为 2 字节）
+  const bufferToDecode = data.length % 2 === 0 ? data.buffer : data.buffer.slice(0, data.length - 1);
+  const dataInt16 = new Int16Array(bufferToDecode);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
 
@@ -69,7 +71,9 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ preview, onBack }) => {
     setIsPlaying(true);
     try {
       const base64Audio = await fetchWordAudio(word);
-      if (!base64Audio) throw new Error("Audio not found");
+      if (!base64Audio) {
+        throw new Error(`无法获取单词 "${word}" 的发音，请检查网络或 API 配额。`);
+      }
 
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       const audioBuffer = await decodeAudioData(decodeBase64(base64Audio), audioCtx, 24000, 1);
@@ -77,10 +81,14 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ preview, onBack }) => {
       const source = audioCtx.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(audioCtx.destination);
-      source.onended = () => setIsPlaying(false);
+      source.onended = () => {
+        setIsPlaying(false);
+        audioCtx.close();
+      };
       source.start();
-    } catch (e) {
-      console.error("音频播放失败", e);
+    } catch (e: any) {
+      console.error("音频播放逻辑异常:", e);
+      alert(e.message || "播放发音时遇到错误，请重试。");
       setIsPlaying(false);
     }
   };

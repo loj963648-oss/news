@@ -2,9 +2,6 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { ArticleContent, ArticlePreview, Category, DailyQuote, VocabItem } from "../types";
 
-// 初始化 Gemini API
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const CACHE_TTL = 3600000; // 缓存有效期 1 小时
 
 /**
@@ -26,33 +23,35 @@ const getCache = (key: string) => {
 };
 
 const setCache = (key: string, data: any) => {
-  sessionStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+  try {
+    sessionStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch (e) {
+    console.warn("SessionStorage 已满，无法缓存音频数据");
+  }
 };
 
 /**
- * 获取文章列表：支持自定义抓取数量以节省配额
+ * 获取文章列表
  */
 export const fetchFeed = async (
   category: Category | 'All', 
-  limit: number = 6, // 默认 6 篇，初始可传 1
+  limit: number = 6, 
   searchQuery?: string,
   offset: number = 0
 ): Promise<ArticlePreview[]> => {
-  // 缓存键值加入 limit，确保不同请求互不干扰
   const cacheKey = `feed_v6_${category}_${searchQuery || ''}_${offset}_limit_${limit}`;
   const cached = getCache(cacheKey);
   if (cached) return cached;
 
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const model = "gemini-3-flash-preview"; 
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   let searchContext = searchQuery ? `关于 "${searchQuery}" 的新闻` : (category === 'All' ? '近期备受瞩目的深度报道' : `${category} 领域的最新动态`);
 
-  // 精确化 Prompt，明确要求返回数量
   const prompt = `查找 ${limit} 篇来自 Economist, NYT, The Atlantic 或 Nature 的高质量文章。
   日期范围：最近一周（截至 ${today}）。
   主题：${searchContext}。
-  返回格式必须是标准的 JSON 数组：[{"id","title","summary","category","date","source"}]。
-  摘要需简洁有力，且适合中高级英语学习者。`;
+  返回格式必须是标准的 JSON 数组：[{"id","title","summary","category","date","source"}]。`;
 
   try {
     const response = await ai.models.generateContent({
@@ -71,7 +70,7 @@ export const fetchFeed = async (
     if (articles.length > 0) setCache(cacheKey, articles);
     return articles;
   } catch (error) {
-    console.error("抓取失败:", error);
+    console.error("抓取文章失败:", error);
     return [];
   }
 };
@@ -100,6 +99,7 @@ export const generateFullArticle = async (
   const cached = getCache(cacheKey);
   if (cached) return cached;
 
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `你是一位精通英语教育的资深撰稿人。请针对 "${title}" 撰写一篇深度报道。
   要求：Economist 风格，提供高质量双语对照翻译，挑选 6 个核心考点词汇并给出在此句中的具体释义。标注 CEFR 难度。`;
 
@@ -109,13 +109,16 @@ export const generateFullArticle = async (
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: articleSchema, // 引用之前定义的 schema
+        responseSchema: articleSchema,
       },
     });
     const data = JSON.parse(response.text.trim());
     setCache(cacheKey, data);
     return data;
-  } catch (e) { return null; }
+  } catch (e) { 
+    console.error("生成全文失败:", e);
+    return null; 
+  }
 };
 
 const articleSchema = {
@@ -161,6 +164,7 @@ export const fetchDailyQuote = async (): Promise<DailyQuote | null> => {
   const cached = getCache(cacheKey);
   if (cached) return cached;
 
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -182,6 +186,7 @@ export const explainWordInContext = async (word: string, contextSentence: string
   const cached = getCache(cacheKey);
   if (cached) return cached;
 
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -202,10 +207,11 @@ export const fetchWordAudio = async (text: string): Promise<string | null> => {
   const cached = getCache(cacheKey);
   if (cached) return cached;
 
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text: `Pronounce: ${text}` }] }],
+      contents: [{ parts: [{ text: `Say the following word clearly: ${text}` }] }],
       config: {
         responseModalities: [Modality.AUDIO],
         speechConfig: {
@@ -213,11 +219,20 @@ export const fetchWordAudio = async (text: string): Promise<string | null> => {
         },
       },
     });
-    const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    
+    // 遍历 parts 以确保找到音频数据
+    const audioPart = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+    const audioData = audioPart?.inlineData?.data;
+
     if (audioData) {
       setCache(cacheKey, audioData);
       return audioData;
     }
+    
+    console.warn(`Gemini 未能为单词 "${text}" 生成有效的音频数据部分。`);
     return null;
-  } catch (e) { return null; }
+  } catch (e) { 
+    console.error(`单词 "${text}" 发音生成 API 错误:`, e);
+    return null; 
+  }
 };
